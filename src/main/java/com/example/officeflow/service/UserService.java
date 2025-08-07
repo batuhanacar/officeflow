@@ -1,11 +1,15 @@
 package com.example.officeflow.service;
 
 import com.example.officeflow.dto.UserCreateDTO;
+import com.example.officeflow.dto.UserViewDTO;
 import com.example.officeflow.entity.User;
 import com.example.officeflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,5 +31,12 @@ public class UserService {
                 .build();
 
         return userRepository.save(newUser);
+    }
+
+    public List<UserViewDTO> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(user -> new UserViewDTO(user.getId(), user.getFullName()))
+                .collect(Collectors.toList());
     }
 }

@@ -11,6 +11,7 @@ import com.example.officeflow.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +23,20 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
+    public List<TaskViewDTO> getAllTasks(Long userId) {
+        List<Task> tasks;
+        if (userId != null) {
+            tasks = taskRepository.findByAssigneeId(userId);
+        } else {
+            tasks = taskRepository.findAll();
+        }
+        return tasks.stream()
+                .map(this::convertToTaskViewDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     public TaskViewDTO createTask(TaskCreateDTO taskCreateDTO) {
         User assignee = userRepository.findById(taskCreateDTO.getAssigneeId())
                 .orElseThrow(() -> new EntityNotFoundException("Atanacak kullanıcı bulunamadı: " + taskCreateDTO.getAssigneeId()));
@@ -30,7 +45,6 @@ public class TaskService {
                 .title(taskCreateDTO.getTitle())
                 .description(taskCreateDTO.getDescription())
                 .status(TaskStatus.TODO)
-                .dueDate(taskCreateDTO.getDueDate())
                 .assignee(assignee)
                 .build();
 
@@ -38,17 +52,36 @@ public class TaskService {
         return convertToTaskViewDTO(savedTask);
     }
 
+    @Transactional(readOnly = true)
     public TaskViewDTO getTaskById(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Görev bulunamadı: " + id));
         return convertToTaskViewDTO(task);
     }
 
-    public List<TaskViewDTO> getAllTasks() {
-        return taskRepository.findAll()
-                .stream()
-                .map(this::convertToTaskViewDTO)
-                .collect(Collectors.toList());
+    @Transactional
+    public TaskViewDTO updateTaskStatus(Long taskId, TaskStatus newStatus) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Güncellenecek görev bulunamadı: " + taskId));
+
+        task.setStatus(newStatus);
+
+        return convertToTaskViewDTO(task);
+    }
+
+    @Transactional
+    public void deleteTask(Long taskId) {
+        if (!taskRepository.existsById(taskId)) {
+            throw new EntityNotFoundException("Silinecek görev bulunamadı: " + taskId);
+        }
+        taskRepository.deleteById(taskId);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isTaskOwner(Long taskId, String username) {
+        return taskRepository.findById(taskId)
+                .map(task -> task.getAssignee().getUsername().equals(username))
+                .orElse(false);
     }
 
     private TaskViewDTO convertToTaskViewDTO(Task task) {
@@ -59,10 +92,8 @@ public class TaskService {
         taskViewDTO.setStatus(task.getStatus());
         taskViewDTO.setCreatedDate(task.getCreatedDate());
         taskViewDTO.setDueDate(task.getDueDate());
-
         UserViewDTO userViewDTO = new UserViewDTO(task.getAssignee().getId(), task.getAssignee().getFullName());
         taskViewDTO.setAssignee(userViewDTO);
-
         return taskViewDTO;
     }
 }
