@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Container, Paper, Typography, Box, CircularProgress, Alert, Button, Chip, Divider, ButtonGroup } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { getStatusChipColor, STATUS_TRANSLATIONS, STATUS_OPTIONS } from '../utils/statusUtils';
 
 const TaskDetailPage = () => {
     const { taskId } = useParams();
@@ -34,7 +35,7 @@ const TaskDetailPage = () => {
         try {
             const response = await axiosInstance.put(`/tasks/${taskId}/status`, { status: newStatus });
             setTask(response.data);
-            toast.success(`Görev durumu güncellendi.`);
+            toast.success(`Görev durumu "${STATUS_TRANSLATIONS[newStatus]}" olarak güncellendi.`);
         } catch (err) {
             toast.error("Durum güncellenirken bir hata oluştu.");
         }
@@ -65,21 +66,28 @@ const TaskDetailPage = () => {
                 <Typography variant="h4" component="h1" gutterBottom>{task.title}</Typography>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
                     <Chip
-                        label={task.status.replace('_', ' ')}
-                        color={task.status === 'DONE' ? 'success' : (task.status === 'IN_PROGRESS' ? 'primary' : 'default')}
+                        label={STATUS_TRANSLATIONS[task.status] || task.status}
+                        color={getStatusChipColor(task.status)}
                     />
                     <Typography variant="subtitle1" color="text.secondary">Atanan: {task.assignee.fullName}</Typography>
                 </Box>
                 <Typography variant="caption" color="text.secondary">Oluşturulma: {new Date(task.createdDate).toLocaleString()}</Typography>
+                {task.dueDate && <Typography variant="caption" display="block" color="text.secondary">Son Teslim: {new Date(task.dueDate).toLocaleString()}</Typography>}
                 <Divider sx={{ my: 3 }} />
                 <Typography variant="body1" sx={{ minHeight: '100px' }}>{task.description || "Bu görev için bir açıklama girilmemiş."}</Typography>
                 <Divider sx={{ my: 3 }} />
                 <Box>
                     <Typography variant="h6" gutterBottom>Durumu Değiştir</Typography>
                     <ButtonGroup variant="outlined">
-                        <Button onClick={() => updateStatus('TODO')} disabled={task.status === 'TODO'}>Yapılacak</Button>
-                        <Button onClick={() => updateStatus('IN_PROGRESS')} disabled={task.status === 'IN_PROGRESS'}>Yapılıyor</Button>
-                        <Button onClick={() => updateStatus('DONE')} disabled={task.status === 'DONE'}>Tamamlandı</Button>
+                        {STATUS_OPTIONS.map(option => (
+                            <Button
+                                key={option.key}
+                                onClick={() => updateStatus(option.key)}
+                                disabled={task.status === option.key}
+                            >
+                                {option.text}
+                            </Button>
+                        ))}
                     </ButtonGroup>
                 </Box>
                 {isTeamLead && (

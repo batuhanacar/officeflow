@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useContext } from 'react'; // useContext'i import et
+import React, { useState, useEffect, useContext } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import axiosInstance from '../api/axiosInstance';
-import { AuthContext } from '../context/AuthContext'; // AuthContext'i import et
-
+import { AuthContext } from '../context/AuthContext';
 import { Box, Typography, CircularProgress, Alert, Paper, Button } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { getCalendarEventColor } from '../utils/statusUtils';
 
 const CalendarPage = () => {
-    const { isTeamLead } = useContext(AuthContext); // Context'ten kullanıcının lider olup olmadığını al
+    const { isTeamLead } = useContext(AuthContext);
     const [events, setEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -19,7 +19,6 @@ const CalendarPage = () => {
     useEffect(() => {
         const fetchTasksForCalendar = async () => {
             try {
-                // KULLANICININ ROLÜNE GÖRE DOĞRU ENDPOINT'İ SEÇ
                 const endpoint = isTeamLead ? '/tasks/all' : '/tasks/my-tasks';
                 const response = await axiosInstance.get(endpoint);
 
@@ -27,7 +26,7 @@ const CalendarPage = () => {
                     id: task.id,
                     title: task.title,
                     start: task.dueDate,
-                    color: task.status === 'DONE' ? 'green' : (task.status === 'IN_PROGRESS' ? 'blue' : 'gray'),
+                    color: getCalendarEventColor(task.status),
                     extendedProps: {
                         assignee: task.assignee.fullName
                     }
@@ -35,15 +34,13 @@ const CalendarPage = () => {
 
                 setEvents(formattedEvents);
             } catch (err) {
-                console.error("Takvim verisi çekilirken hata:", err);
                 setError("Görevler takvime yüklenirken bir hata oluştu.");
             } finally {
                 setIsLoading(false);
             }
         };
-
         fetchTasksForCalendar();
-    }, [isTeamLead]); // isTeamLead değiştiğinde (pek olası değil ama doğru kullanım) yeniden çalış
+    }, [isTeamLead]);
 
     if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress /></Box>;
     if (error) return <Alert severity="error">{error}</Alert>;

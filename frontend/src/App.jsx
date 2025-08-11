@@ -2,6 +2,8 @@ import React, { useContext } from 'react';
 import { Routes, Route, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
+
+// MUI Bileşenleri
 import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/material';
 
 import LoginPage from './pages/LoginPage';
@@ -11,7 +13,7 @@ import TaskDetailPage from './pages/TaskDetailPage';
 import CalendarPage from './pages/CalendarPage';
 
 function App() {
-    const { isAuthenticated, logout } = useContext(AuthContext); // isTeamLead'i buradan kaldırdık, artık gerek yok.
+    const { isAuthenticated, logout, isTeamLead } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -25,22 +27,29 @@ function App() {
 
             <AppBar position="static">
                 <Toolbar>
-                    <Typography
-                        variant="h6"
+
+                    <Box
                         component={RouterLink}
                         to={isAuthenticated ? "/dashboard" : "/login"}
-                        sx={{ flexGrow: 1, color: 'inherit', textDecoration: 'none' }}
+                        sx={{ flexGrow: 1 }}
                     >
-                        OfficeFlow
-                    </Typography>
+                        <Box
+                            component="img"
+                            src="/medya_ve_bilisim.png"
+                            alt="HSGM Logo"
+                            sx={{
+                                // YÜKSEKLİĞİ 40'tan 50'ye ÇIKARDIK
+                                height: 50,
+                                width: 'auto',
+                                verticalAlign: 'middle'
+                            }}
+                        />
+                    </Box>
 
                     {isAuthenticated && (
                         <Box>
                             <Button color="inherit" component={RouterLink} to="/dashboard">Görev Panosu</Button>
-
-                            {/* KURALI KALDIRDIK. Artık bu buton tüm giriş yapmış kullanıcılar için görünür. */}
                             <Button color="inherit" component={RouterLink} to="/calendar">Takvim</Button>
-
                             <Button color="inherit" onClick={handleLogout}>Çıkış Yap</Button>
                         </Box>
                     )}
