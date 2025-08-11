@@ -3,55 +3,45 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
 import CreateTaskModal from '../components/CreateTaskModal';
-
-import {
-    Box,
-    Button,
-    Typography,
-    CircularProgress,
-    Alert,
-    Grid,
-    Card,
-    CardContent,
-    CardActions,
-    Chip
-} from '@mui/material';
+import { Box, Button, Typography, CircularProgress, Alert, Grid, Card, CardContent, CardActions, Chip, FormControlLabel, Switch } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 
 const DashboardPage = () => {
-    const { user, logout } = useContext(AuthContext);
-    const navigate = useNavigate();
-
+    const { isTeamLead } = useContext(AuthContext);
     const [tasks, setTasks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    const fetchTasks = async () => {
-        try {
-            setIsLoading(true);
-            const response = await axiosInstance.get('/tasks');
-            setTasks(response.data);
-            setError('');
-        } catch (err) {
-            console.error("Görevler yüklenirken hata:", err);
-            setError("Görevler yüklenirken bir hata oluştu.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const [showAllTasks, setShowAllTasks] = useState(false); // Anahtarın durumunu tutan state
 
     useEffect(() => {
+        const fetchTasks = async () => {
+            try {
+                setIsLoading(true);
+                // Lider ise ve anahtar açıksa "/all", diğer tüm durumlarda "/my-tasks" endpoint'ini çağır.
+                const endpoint = isTeamLead && showAllTasks ? '/tasks/all' : '/tasks/my-tasks';
+                const response = await axiosInstance.get(endpoint);
+                setTasks(response.data);
+                setError('');
+            } catch (err) {
+                console.error("Görevler yüklenirken hata:", err);
+                setError("Görevler yüklenirken bir hata oluştu.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
         fetchTasks();
-    }, []);
+    }, [showAllTasks, isTeamLead]); // Anahtarın durumu değiştiğinde görevleri yeniden çek
 
     const handleTaskCreated = (newTask) => {
-        setTasks(prevTasks => [...prevTasks, newTask]);
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
+        // Yeni görev eklendiğinde, eğer "Tüm Görevler" görünümündeysek veya görev bize atandıysa listeyi güncelle.
+        // En basit çözüm, listeyi yeniden çekmektir.
+        const fetchTasks = async () => {
+            const endpoint = isTeamLead && showAllTasks ? '/tasks/all' : '/tasks/my-tasks';
+            const response = await axiosInstance.get(endpoint);
+            setTasks(response.data);
+        };
+        fetchTasks();
     };
 
     const getStatusChipColor = (status) => {
@@ -63,36 +53,30 @@ const DashboardPage = () => {
         }
     };
 
-    const isTeamLead = user && user.role === 'ROLE_TEAM_LEAD';
-
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h4" component="h1">
-                    Görev Panosu
+                    {isTeamLead && showAllTasks ? "Tüm Görevler" : "Benim Görevlerim"}
                 </Typography>
-                <div>
-                    {isTeamLead && (
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() => setIsModalOpen(true)}
-                        >
-                            Yeni Görev Ekle
-                        </Button>
-                    )}
-                </div>
+                {isTeamLead && (
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsModalOpen(true)}>
+                        Yeni Görev Ekle
+                    </Button>
+                )}
             </Box>
 
-            {isLoading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
-                    <CircularProgress />
-                </Box>
+            {/* Sadece takım liderleri bu anahtarı görebilir */}
+            {isTeamLead && (
+                <FormControlLabel
+                    control={<Switch checked={showAllTasks} onChange={(e) => setShowAllTasks(e.target.checked)} />}
+                    label="Tüm Görevleri Göster"
+                    sx={{ mb: 2 }}
+                />
             )}
 
-            {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
-            )}
+            {isLoading && <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>}
+            {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
 
             {!isLoading && !error && (
                 <Grid container spacing={3}>
@@ -101,12 +85,8 @@ const DashboardPage = () => {
                             <Grid item key={task.id} xs={12} sm={6} md={4}>
                                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                     <CardContent sx={{ flexGrow: 1 }}>
-                                        <Typography gutterBottom variant="h5" component="h2">
-                                            {task.title}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Atanan: {task.assignee.fullName}
-                                        </Typography>
+                                        <Typography gutterBottom variant="h5" component="h2">{task.title}</Typography>
+                                        <Typography variant="body2" color="text.secondary">Atanan: {task.assignee.fullName}</Typography>
                                         <Chip
                                             label={task.status.replace('_', ' ')}
                                             color={getStatusChipColor(task.status)}
@@ -115,11 +95,7 @@ const DashboardPage = () => {
                                         />
                                     </CardContent>
                                     <CardActions>
-                                        <Button
-                                            size="small"
-                                            component={RouterLink}
-                                            to={`/tasks/${task.id}`}
-                                        >
+                                        <Button size="small" component={RouterLink} to={`/tasks/${task.id}`}>
                                             Detayları Gör
                                         </Button>
                                     </CardActions>
@@ -128,7 +104,7 @@ const DashboardPage = () => {
                         ))
                     ) : (
                         <Typography sx={{ ml: 2, width: '100%' }}>
-                            Size atanmış bir görev bulunmuyor.
+                            {isTeamLead && showAllTasks ? "Sistemde görüntülenecek görev bulunmuyor." : "Size atanmış bir görev bulunmuyor."}
                         </Typography>
                     )}
                 </Grid>

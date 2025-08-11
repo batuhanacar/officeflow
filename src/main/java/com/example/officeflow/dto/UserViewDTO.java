@@ -10,4 +10,6 @@ import lombok.NoArgsConstructor;
 public class UserViewDTO {
     private Long id;
     private String fullName;
+    private String username;
 }
+

@@ -36,7 +36,11 @@ public class UserService {
     public List<UserViewDTO> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(user -> new UserViewDTO(user.getId(), user.getFullName()))
+                .map(user -> new UserViewDTO(
+                        user.getId(),
+                        user.getFullName(),
+                        user.getUsername()
+                ))
                 .collect(Collectors.toList());
     }
 }

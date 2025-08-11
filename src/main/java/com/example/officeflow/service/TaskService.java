@@ -23,20 +23,18 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
 
-    @Transactional(readOnly = true)
-    public List<TaskViewDTO> getAllTasks(Long userId) {
-        List<Task> tasks;
-        if (userId != null) {
-            tasks = taskRepository.findByAssigneeId(userId);
-        } else {
-            tasks = taskRepository.findAll();
-        }
-        return tasks.stream()
+    public List<TaskViewDTO> getAllTasks() {
+        return taskRepository.findAll().stream()
                 .map(this::convertToTaskViewDTO)
                 .collect(Collectors.toList());
     }
 
-    @Transactional
+    public List<TaskViewDTO> getTasksByAssigneeId(Long userId) {
+        return taskRepository.findByAssigneeId(userId).stream()
+                .map(this::convertToTaskViewDTO)
+                .collect(Collectors.toList());
+    }
+
     public TaskViewDTO createTask(TaskCreateDTO taskCreateDTO) {
         User assignee = userRepository.findById(taskCreateDTO.getAssigneeId())
                 .orElseThrow(() -> new EntityNotFoundException("Atanacak kullanıcı bulunamadı: " + taskCreateDTO.getAssigneeId()));
@@ -52,7 +50,6 @@ public class TaskService {
         return convertToTaskViewDTO(savedTask);
     }
 
-    @Transactional(readOnly = true)
     public TaskViewDTO getTaskById(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Görev bulunamadı: " + id));
@@ -69,7 +66,6 @@ public class TaskService {
         return convertToTaskViewDTO(task);
     }
 
-    @Transactional
     public void deleteTask(Long taskId) {
         if (!taskRepository.existsById(taskId)) {
             throw new EntityNotFoundException("Silinecek görev bulunamadı: " + taskId);
@@ -77,7 +73,6 @@ public class TaskService {
         taskRepository.deleteById(taskId);
     }
 
-    @Transactional(readOnly = true)
     public boolean isTaskOwner(Long taskId, String username) {
         return taskRepository.findById(taskId)
                 .map(task -> task.getAssignee().getUsername().equals(username))
@@ -92,7 +87,7 @@ public class TaskService {
         taskViewDTO.setStatus(task.getStatus());
         taskViewDTO.setCreatedDate(task.getCreatedDate());
         taskViewDTO.setDueDate(task.getDueDate());
-        UserViewDTO userViewDTO = new UserViewDTO(task.getAssignee().getId(), task.getAssignee().getFullName());
+        UserViewDTO userViewDTO = new UserViewDTO(task.getAssignee().getId(), task.getAssignee().getFullName(), task.getAssignee().getUsername());
         taskViewDTO.setAssignee(userViewDTO);
         return taskViewDTO;
     }

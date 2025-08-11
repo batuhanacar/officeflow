@@ -12,12 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -27,25 +26,18 @@ public class TaskController {
     private final TaskService taskService;
     private final UserRepository userRepository;
 
-    @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_TEAM_LEAD')")
-    public ResponseEntity<List<TaskViewDTO>> getAllTasks(Authentication authentication) {
+    @GetMapping("/my-tasks")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<TaskViewDTO>> getMyTasks(Authentication authentication) {
+        User user = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("Kullanıcı bulunamadı: " + authentication.getName()));
+        return ResponseEntity.ok(taskService.getTasksByAssigneeId(user.getId()));
+    }
 
-        boolean isTeamLead = authentication.getAuthorities().stream()
-                .anyMatch(ga -> ga.getAuthority().equals("ROLE_TEAM_LEAD"));
-
-        if (isTeamLead) {
-            return ResponseEntity.ok(taskService.getAllTasks(null));
-        } else {
-            Optional<User> currentUserOpt = userRepository.findByUsername(authentication.getName());
-
-            if (currentUserOpt.isPresent()) {
-                User currentUser = currentUserOpt.get();
-                return ResponseEntity.ok(taskService.getAllTasks(currentUser.getId()));
-            }
-
-            return ResponseEntity.ok(Collections.emptyList());
-        }
+    @GetMapping("/all")
+    @PreAuthorize("hasAuthority('ROLE_TEAM_LEAD')")
+    public ResponseEntity<List<TaskViewDTO>> getAllTasks() {
+        return ResponseEntity.ok(taskService.getAllTasks());
     }
 
     @PostMapping

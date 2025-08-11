@@ -24,7 +24,9 @@ public class Task {
     @Column(nullable = false)
     private String title;
 
-    @Lob
+    // @Lob ANNOTASYONUNU KALDIRDIK.
+    // Bu annotasyon, Hibernate'in bu alanı standart bir metin olarak
+    // işlemesini sağlayarak LOB hatasını önleyecektir.
     @Column(columnDefinition = "TEXT")
     private String description;
 

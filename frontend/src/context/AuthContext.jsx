@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }) => {
             } catch (error) {
                 setUser(null);
                 localStorage.removeItem('token');
+                console.error("Geçersiz token bulundu ve temizlendi:", error);
             }
         }
         setIsLoading(false);
@@ -55,6 +56,7 @@ export const AuthProvider = ({ children }) => {
         token,
         user,
         isAuthenticated: !!token,
+        isTeamLead: user?.role === 'ROLE_TEAM_LEAD',
         isLoading,
         login,
         logout,
