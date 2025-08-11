@@ -23,6 +23,22 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
 
+    public TaskViewDTO createTask(TaskCreateDTO taskCreateDTO) {
+        User assignee = userRepository.findById(taskCreateDTO.getAssigneeId())
+                .orElseThrow(() -> new EntityNotFoundException("Atanacak kullanıcı bulunamadı: " + taskCreateDTO.getAssigneeId()));
+
+        Task task = Task.builder()
+                .title(taskCreateDTO.getTitle())
+                .description(taskCreateDTO.getDescription())
+                .status(TaskStatus.TODO)
+                .assignee(assignee)
+                .dueDate(taskCreateDTO.getDueDate())
+                .build();
+
+        Task savedTask = taskRepository.save(task);
+        return convertToTaskViewDTO(savedTask);
+    }
+
     public List<TaskViewDTO> getAllTasks() {
         return taskRepository.findAll().stream()
                 .map(this::convertToTaskViewDTO)
@@ -33,21 +49,6 @@ public class TaskService {
         return taskRepository.findByAssigneeId(userId).stream()
                 .map(this::convertToTaskViewDTO)
                 .collect(Collectors.toList());
-    }
-
-    public TaskViewDTO createTask(TaskCreateDTO taskCreateDTO) {
-        User assignee = userRepository.findById(taskCreateDTO.getAssigneeId())
-                .orElseThrow(() -> new EntityNotFoundException("Atanacak kullanıcı bulunamadı: " + taskCreateDTO.getAssigneeId()));
-
-        Task task = Task.builder()
-                .title(taskCreateDTO.getTitle())
-                .description(taskCreateDTO.getDescription())
-                .status(TaskStatus.TODO)
-                .assignee(assignee)
-                .build();
-
-        Task savedTask = taskRepository.save(task);
-        return convertToTaskViewDTO(savedTask);
     }
 
     public TaskViewDTO getTaskById(Long id) {

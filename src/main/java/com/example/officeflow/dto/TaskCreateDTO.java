@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-
 import java.time.LocalDateTime;
 
 @Data
@@ -21,5 +20,7 @@ public class TaskCreateDTO {
     @NotNull(message = "Görevin atanacağı kullanıcı ID'si boş olamaz.")
     private Long assigneeId;
 
+    @NotNull(message = "Son teslim tarihi boş olamaz.") // Artık zorunlu
+    @FutureOrPresent(message = "Son teslim tarihi geçmiş bir tarih olamaz.") // Kuralı geri ekledik
     private LocalDateTime dueDate;
 }
