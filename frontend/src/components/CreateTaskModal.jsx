@@ -2,24 +2,16 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Button,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    CircularProgress,
-    Alert
+    Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+    Button, Select, MenuItem, FormControl, InputLabel, CircularProgress, Alert
 } from '@mui/material';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 
 const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [assigneeId, setAssigneeId] = useState('');
+    const [dueDate, setDueDate] = useState(null);
     const [users, setUsers] = useState([]);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,6 +21,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
             setTitle('');
             setDescription('');
             setAssigneeId('');
+            setDueDate(null);
             setError('');
 
             const fetchUsers = async () => {
@@ -48,11 +41,18 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
         setIsSubmitting(true);
         setError('');
 
+        if (!dueDate) {
+            toast.error("Lütfen bir son teslim tarihi seçin.");
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             const response = await axiosInstance.post('/tasks', {
                 title,
                 description,
-                assigneeId: Number(assigneeId)
+                assigneeId: Number(assigneeId),
+                dueDate
             });
             toast.success('Görev başarıyla oluşturuldu!');
             onTaskCreated(response.data);
@@ -96,7 +96,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
                     onChange={(e) => setDescription(e.target.value)}
                     sx={{ mb: 2 }}
                 />
-                <FormControl fullWidth>
+                <FormControl fullWidth sx={{ mb: 2 }}>
                     <InputLabel id="assignee-select-label">Kullanıcı Ata</InputLabel>
                     <Select
                         labelId="assignee-select-label"
@@ -116,6 +116,13 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
                         ))}
                     </Select>
                 </FormControl>
+                <DateTimePicker
+                    label="Son Teslim Tarihi"
+                    value={dueDate}
+                    onChange={(newValue) => setDueDate(newValue)}
+                    sx={{ width: '100%' }}
+                    slotProps={{ textField: { required: true } }} // renderInput yerine bu kullanılır
+                />
                 {error && <Alert severity="error" sx={{mt: 2}}>{error}</Alert>}
             </DialogContent>
             <DialogActions sx={{ p: '0 24px 24px' }}>
