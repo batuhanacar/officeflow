@@ -1,35 +1,33 @@
-import React, { useState, useEffect, useContext } from 'react'; // Tırnak işaretleri kaldırıldı
+import React, { useState, useEffect } from 'react';
 import axiosInstance from '../api/axiosInstance';
 import { toast } from 'react-hot-toast';
-import { format } from 'date-fns';
-import { AuthContext } from '../context/AuthContext';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, TextField,
     Button, Select, MenuItem, FormControl, InputLabel, CircularProgress, Alert
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { format } from 'date-fns';
 
 const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
-    const { user } = useContext(AuthContext);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [assigneeId, setAssigneeId] = useState('');
     const [dueDate, setDueDate] = useState(null);
-    const [usersInDepartment, setUsersInDepartment] = useState([]);
+    const [users, setUsers] = useState([]);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            const fetchUsersInDepartment = async () => {
+            const fetchUsers = async () => {
                 try {
                     const response = await axiosInstance.get('/users');
-                    setUsersInDepartment(response.data);
+                    setUsers(response.data);
                 } catch (err) {
-                    setError('Departman kullanıcıları yüklenemedi.');
+                    toast.error('Kullanıcı listesi yüklenemedi.');
                 }
             };
-            fetchUsersInDepartment();
+            fetchUsers();
         }
     }, [isOpen]);
 
@@ -42,36 +40,38 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
         onClose();
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         setError('');
 
-        if (!dueDate) {
-            toast.error("Lütfen bir son teslim tarihi seçin.");
+        if (!dueDate || !assigneeId) {
+            toast.error("Lütfen tüm zorunlu alanları doldurun.");
             setIsSubmitting(false);
             return;
         }
 
         const formattedDueDate = format(dueDate, "yyyy-MM-dd'T'HH:mm:ss");
 
-        try {
-            await axiosInstance.post('/tasks', {
-                title,
-                description,
-                assigneeId: Number(assigneeId),
-                dueDate: formattedDueDate
+        axiosInstance.post('/tasks', {
+            title,
+            description,
+            assigneeId: Number(assigneeId),
+            dueDate: formattedDueDate
+        })
+            .then(response => {
+                toast.success('Görev başarıyla oluşturuldu!');
+                onTaskCreated();
+                handleClose();
+            })
+            .catch(err => {
+                const errorMessage = err.response?.data?.message || 'Görev oluşturulamadı.';
+                toast.error(errorMessage);
+                setError(errorMessage);
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
-            toast.success('Görev başarıyla oluşturuldu!');
-            onTaskCreated();
-            handleClose();
-        } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Görev oluşturulamadı.';
-            toast.error(errorMessage);
-            setError(errorMessage);
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     return (
@@ -90,8 +90,10 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated }) => {
                         required
                     >
                         <MenuItem value="" disabled>Bir kullanıcı seçin...</MenuItem>
-                        {usersInDepartment.map((u) => (
-                            <MenuItem key={u.id} value={u.id}>{u.fullName}</MenuItem>
+                        {users.map((user) => (
+                            <MenuItem key={user.id} value={user.id}>
+                                {user.fullName}
+                            </MenuItem>
                         ))}
                     </Select>
                 </FormControl>

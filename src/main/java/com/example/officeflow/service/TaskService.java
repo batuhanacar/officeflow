@@ -92,4 +92,9 @@ public class TaskService {
         taskViewDTO.setAssignee(userViewDTO);
         return taskViewDTO;
     }
+
+    @Transactional
+    public long cleanupAllCompletedTasks() {
+        return taskRepository.deleteByStatus(TaskStatus.DONE);
+    }
 }

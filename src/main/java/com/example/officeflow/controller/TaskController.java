@@ -68,4 +68,11 @@ public class TaskController {
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/cleanup-completed")
+    @PreAuthorize("hasAuthority('ROLE_TEAM_LEAD')")
+    public ResponseEntity<String> cleanupCompletedTasks() {
+        long deletedCount = taskService.cleanupAllCompletedTasks();
+        return ResponseEntity.ok(deletedCount + " adet tamamlanmış görev silindi.");
+    }
 }
