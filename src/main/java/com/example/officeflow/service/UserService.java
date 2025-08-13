@@ -5,8 +5,11 @@ import com.example.officeflow.dto.UserViewDTO;
 import com.example.officeflow.entity.User;
 import com.example.officeflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,11 +39,30 @@ public class UserService {
     public List<UserViewDTO> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(user -> new UserViewDTO(
-                        user.getId(),
-                        user.getFullName(),
-                        user.getUsername()
-                ))
+                .map(user -> new UserViewDTO(user.getId(), user.getFullName(), user.getUsername()))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        // Silinmek istenen kullanıcıyı bul
+        User userToDelete = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Kullanıcı bulunamadı: " + userId));
+
+        // İşlemi yapan (giriş yapmış olan) kullanıcının bilgilerini al
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String currentUsername = ((UserDetails) principal).getUsername();
+
+        // Kural: Kullanıcı kendini silemez.
+        if (userToDelete.getUsername().equals(currentUsername)) {
+            throw new IllegalStateException("Kendinizi silemezsiniz.");
+        }
+
+        // TODO: Bu kullanıcıya atanmış görevlerin ne olacağına karar ver.
+        // Şimdilik, görevleri varsa silme işlemi hata verebilir (foreign key constraint).
+        // Bu sorunu çözmek için TaskRepository'yi buraya inject edip,
+        // ilgili görevlerin assignee'sini null yapabiliriz.
+
+        userRepository.deleteById(userId);
     }
 }
