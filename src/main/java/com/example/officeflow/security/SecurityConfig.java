@@ -53,7 +53,17 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/users/register").permitAll()
+                        .requestMatchers(
+                                // Mevcut herkese açık yollar
+                                "/api/auth/**",
+                                "/api/users/register",
+                                "/api/setup/initialize", // (Bu da dünkü departmanlı yapıdan kalmış olabilir, zararı yok)
+
+                                // Swagger için eklenen herkese açık yollar
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
