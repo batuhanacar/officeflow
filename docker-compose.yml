@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:17-alpine
+    container_name: officeflow-db-container
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12
+      POSTGRES_DB: officeflow_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+    container_name: officeflow-backend-container
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/officeflow_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 12
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: bXktc3VwZXItc2VjcmV0LWtleS1mb3Itb2ZmaWNlZmxvdy1hcHBsaWNhdGlvbi1zcHJpbmctYm9vdC1qd3Q=
+      JWT_EXPIRATION_MS: 86400000
+      SPRING_JACKSON_TIME_ZONE: Europe/Istanbul
+    depends_on:
+      - postgres-db
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: officeflow-frontend-container
+    ports:
+      - "5173:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080/api
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data:
