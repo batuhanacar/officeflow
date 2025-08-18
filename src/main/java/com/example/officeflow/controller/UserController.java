@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private final UserService userService;
-    private final UserRepository userRepository; // Listeleme için geçici olarak kullanıyoruz
+    private final UserRepository userRepository;
 
     @PostMapping("/register")
     @PreAuthorize("hasAuthority('ROLE_TEAM_LEAD')")
@@ -31,7 +31,8 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_TEAM_LEAD')")
+    // DEĞİŞİKLİK BURADA: Artık tüm giriş yapmış kullanıcılar listeyi görebilir.
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<UserViewDTO>> getAllUsers() {
         List<UserViewDTO> users = userRepository.findAll().stream()
                 .map(user -> new UserViewDTO(user.getId(), user.getFullName(), user.getUsername()))

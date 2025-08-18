@@ -11,7 +11,7 @@ import { getStatusChipColor, STATUS_TRANSLATIONS, STATUS_OPTIONS } from '../util
 const TaskDetailPage = () => {
     const { taskId } = useParams();
     const navigate = useNavigate();
-    const { isTeamLead } = useContext(AuthContext);
+    const { user, isTeamLead } = useContext(AuthContext);
 
     const [task, setTask] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -57,6 +57,8 @@ const TaskDetailPage = () => {
     if (error) return <Alert severity="error">{error}</Alert>;
     if (!task) return <Alert severity="warning">Görev bulunamadı.</Alert>;
 
+    const isOwner = task.assignees?.some(assignee => assignee.username === user.username);
+
     return (
         <Container maxWidth="md">
             <Button component={RouterLink} to="/dashboard" startIcon={<ArrowBackIcon />} sx={{ mb: 2 }}>
@@ -69,27 +71,37 @@ const TaskDetailPage = () => {
                         label={STATUS_TRANSLATIONS[task.status] || task.status}
                         color={getStatusChipColor(task.status)}
                     />
-                    <Typography variant="subtitle1" color="text.secondary">Atanan: {task.assignee.fullName}</Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                        Atanan Kişi(ler): {
+                        task.assignees && task.assignees.length > 0
+                            ? task.assignees.map(a => a.fullName).join(', ')
+                            : 'Atanmamış'
+                    }
+                    </Typography>
                 </Box>
                 <Typography variant="caption" color="text.secondary">Oluşturulma: {new Date(task.createdDate).toLocaleString()}</Typography>
                 {task.dueDate && <Typography variant="caption" display="block" color="text.secondary">Son Teslim: {new Date(task.dueDate).toLocaleString()}</Typography>}
                 <Divider sx={{ my: 3 }} />
                 <Typography variant="body1" sx={{ minHeight: '100px' }}>{task.description || "Bu görev için bir açıklama girilmemiş."}</Typography>
                 <Divider sx={{ my: 3 }} />
-                <Box>
-                    <Typography variant="h6" gutterBottom>Durumu Değiştir</Typography>
-                    <ButtonGroup variant="outlined">
-                        {STATUS_OPTIONS.map(option => (
-                            <Button
-                                key={option.key}
-                                onClick={() => updateStatus(option.key)}
-                                disabled={task.status === option.key}
-                            >
-                                {option.text}
-                            </Button>
-                        ))}
-                    </ButtonGroup>
-                </Box>
+
+                {(isTeamLead || isOwner) && (
+                    <Box>
+                        <Typography variant="h6" gutterBottom>Durumu Değiştir</Typography>
+                        <ButtonGroup variant="outlined">
+                            {STATUS_OPTIONS.map(option => (
+                                <Button
+                                    key={option.key}
+                                    onClick={() => updateStatus(option.key)}
+                                    disabled={task.status === option.key}
+                                >
+                                    {option.text}
+                                </Button>
+                            ))}
+                        </ButtonGroup>
+                    </Box>
+                )}
+
                 {isTeamLead && (
                     <Box sx={{ mt: 4, p: 2, border: '1px dashed red' }}>
                         <Typography variant="h6" color="error">Tehlikeli Alan</Typography>

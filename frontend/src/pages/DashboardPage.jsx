@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
 import CreateTaskModal from '../components/CreateTaskModal';
 import {
@@ -45,20 +45,21 @@ const DashboardPage = () => {
         let filteredTasks = [...allTasks];
         if (searchTerm) {
             filteredTasks = filteredTasks.filter(task =>
-                task.assignee?.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+                task.assignees?.some(assignee =>
+                    assignee.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+                )
             );
         }
-        if (sortConfig.key !== null) {
+        if (sortConfig.key) {
             filteredTasks.sort((a, b) => {
-                const aValue = a[sortConfig.key];
-                const bValue = b[sortConfig.key];
-                if (sortConfig.key === 'assignee') {
-                    const aName = a.assignee?.fullName || '';
-                    const bName = b.assignee?.fullName || '';
-                    if (aName < bName) return sortConfig.direction === 'ascending' ? -1 : 1;
-                    if (aName > bName) return sortConfig.direction === 'ascending' ? 1 : -1;
-                    return 0;
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+
+                if (sortConfig.key === 'assignees') {
+                    aValue = a.assignees?.[0]?.fullName || '';
+                    bValue = b.assignees?.[0]?.fullName || '';
                 }
+
                 if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
                 if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
                 return 0;
@@ -68,21 +69,20 @@ const DashboardPage = () => {
     }, [allTasks, searchTerm, sortConfig]);
 
     const handleSort = (key) => {
-        let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
-        }
-        setSortConfig({ key, direction });
+        const isAsc = sortConfig.key === key && sortConfig.direction === 'ascending';
+        setSortConfig({ key, direction: isAsc ? 'desc' : 'asc' });
     };
 
     const handleTaskCreated = () => { fetchTasks(); };
     const handleRowClick = (taskId) => { navigate(`/tasks/${taskId}`); };
 
+    const canCreateTask = true;
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h4" component="h1">Görev Panosu</Typography>
-                {isTeamLead && (
+                {canCreateTask && (
                     <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsModalOpen(true)}>Yeni Görev Ekle</Button>
                 )}
             </Box>
@@ -101,7 +101,7 @@ const DashboardPage = () => {
                             <TableHead>
                                 <TableRow>
                                     <TableCell><TableSortLabel active={sortConfig.key === 'title'} direction={sortConfig.direction} onClick={() => handleSort('title')}>Görev Başlığı</TableSortLabel></TableCell>
-                                    <TableCell><TableSortLabel active={sortConfig.key === 'assignee'} direction={sortConfig.direction} onClick={() => handleSort('assignee')}>Atanan Kişi</TableSortLabel></TableCell>
+                                    <TableCell><TableSortLabel active={sortConfig.key === 'assignees'} direction={sortConfig.direction} onClick={() => handleSort('assignees')}>Atanan Kişi(ler)</TableSortLabel></TableCell>
                                     <TableCell><TableSortLabel active={sortConfig.key === 'dueDate'} direction={sortConfig.direction} onClick={() => handleSort('dueDate')}>Son Teslim Tarihi</TableSortLabel></TableCell>
                                     <TableCell>Durum</TableCell>
                                 </TableRow>
@@ -111,7 +111,12 @@ const DashboardPage = () => {
                                     displayedTasks.map((task) => (
                                         <TableRow key={task.id} hover onClick={() => handleRowClick(task.id)} sx={{ cursor: 'pointer' }}>
                                             <TableCell>{task.title}</TableCell>
-                                            <TableCell>{task.assignee ? task.assignee.fullName : 'Atanmamış'}</TableCell>
+                                            <TableCell>
+                                                {task.assignees && task.assignees.length > 0
+                                                    ? task.assignees.map(a => a.fullName).join(', ')
+                                                    : 'Atanmamış'
+                                                }
+                                            </TableCell>
                                             <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</TableCell>
                                             <TableCell><Chip label={STATUS_TRANSLATIONS[task.status] || task.status} color={getStatusChipColor(task.status)} size="small" /></TableCell>
                                         </TableRow>
