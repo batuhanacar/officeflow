@@ -34,4 +34,7 @@ public class User {
 
     @OneToMany(mappedBy = "assignee")
     private Set<Task> tasks;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Note> notes;
 }

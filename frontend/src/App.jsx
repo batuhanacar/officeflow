@@ -10,7 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import TaskDetailPage from './pages/TaskDetailPage';
 import CalendarPage from './pages/CalendarPage';
 import UserManagementPage from './pages/UserManagementPage';
-
+import NotesPage from './pages/NotesPage';
 function App() {
     const { isAuthenticated, logout, isTeamLead } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -32,6 +32,7 @@ function App() {
                         <Box>
                             <Button color="inherit" component={RouterLink} to="/dashboard">Görev Panosu</Button>
                             <Button color="inherit" component={RouterLink} to="/calendar">Takvim</Button>
+                            <Button color="inherit" component={RouterLink} to="/notes">Notlarım</Button>
                             {isTeamLead && (
                                 <Button color="inherit" component={RouterLink} to="/users">Kullanıcı Yönetimi</Button>
                             )}
@@ -48,6 +49,7 @@ function App() {
                     <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                     <Route path="/users" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
                     <Route path="/" element={<LoginPage />} />
+                    <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
                 </Routes>
             </Container>
         </Box>

@@ -17,5 +17,4 @@ public class OfficeflowApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(OfficeflowApplication.class, args);
 	}
-
 }
