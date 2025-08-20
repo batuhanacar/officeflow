@@ -18,7 +18,7 @@ const DashboardPage = () => {
     const [error, setError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortConfig, setSortConfig] = useState({ key: 'createdDate', direction: 'descending' });
+    const [sortConfig, setSortConfig] = useState({ key: 'createdDate', direction: 'desc' });
 
     const fetchTasks = async () => {
         try {
@@ -65,11 +65,13 @@ const DashboardPage = () => {
                 }
 
                 let comparison = 0;
-                if (typeof aValue === 'string' && typeof bValue === 'string') {
-                    // TÜRKÇE KARAKTERLERE DUYARLI SIRALAMA
+                // Değerlerin null veya undefined olma durumunu kontrol et
+                if (aValue == null) comparison = 1;
+                else if (bValue == null) comparison = -1;
+                // Değerler varsa karşılaştır
+                else if (typeof aValue === 'string' && typeof bValue === 'string') {
                     comparison = aValue.localeCompare(bValue, 'tr-TR');
                 } else {
-                    // Tarih ve diğerleri için normal karşılaştırma
                     if (aValue < bValue) {
                         comparison = -1;
                     } else if (aValue > bValue) {
@@ -84,8 +86,11 @@ const DashboardPage = () => {
     }, [allTasks, searchTerm, sortConfig]);
 
     const handleSort = (key) => {
-        const isAsc = sortConfig.key === key && sortConfig.direction === 'ascending';
-        setSortConfig({ key, direction: isAsc ? 'desc' : 'asc' });
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
     };
 
     const handleTaskCreated = () => { fetchTasks(); };
@@ -121,10 +126,26 @@ const DashboardPage = () => {
                         <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell><TableSortLabel active={sortConfig.key === 'title'} direction={sortConfig.direction} onClick={() => handleSort('title')}>Görev Başlığı</TableSortLabel></TableCell>
-                                    <TableCell><TableSortLabel active={sortConfig.key === 'assignees'} direction={sortConfig.direction} onClick={() => handleSort('assignees')}>Atanan Kişi(ler)</TableSortLabel></TableCell>
-                                    <TableCell><TableSortLabel active={sortConfig.key === 'createdDate'} direction={sortConfig.direction} onClick={() => handleSort('createdDate')}>Oluşturulma Tarihi</TableSortLabel></TableCell>
-                                    <TableCell><TableSortLabel active={sortConfig.key === 'dueDate'} direction={sortConfig.direction} onClick={() => handleSort('dueDate')}>Son Teslim Tarihi</TableSortLabel></TableCell>
+                                    <TableCell>
+                                        <TableSortLabel active={sortConfig.key === 'title'} direction={sortConfig.direction === 'ascending' ? 'asc' : 'desc'} onClick={() => handleSort('title')}>
+                                            Görev Başlığı
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel active={sortConfig.key === 'assignees'} direction={sortConfig.direction === 'ascending' ? 'asc' : 'desc'} onClick={() => handleSort('assignees')}>
+                                            Atanan Kişi(ler)
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel active={sortConfig.key === 'createdDate'} direction={sortConfig.direction === 'ascending' ? 'asc' : 'desc'} onClick={() => handleSort('createdDate')}>
+                                            Oluşturulma Tarihi
+                                        </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TableSortLabel active={sortConfig.key === 'dueDate'} direction={sortConfig.direction === 'ascending' ? 'asc' : 'desc'} onClick={() => handleSort('dueDate')}>
+                                            Son Teslim Tarihi
+                                        </TableSortLabel>
+                                    </TableCell>
                                     <TableCell>Durum</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -134,10 +155,7 @@ const DashboardPage = () => {
                                         <TableRow key={task.id} hover onClick={() => handleRowClick(task.id)} sx={{ cursor: 'pointer' }}>
                                             <TableCell>{task.title}</TableCell>
                                             <TableCell>
-                                                {task.assignees && task.assignees.length > 0
-                                                    ? task.assignees.map(a => a.fullName).join(', ')
-                                                    : 'Atanmamış'
-                                                }
+                                                {task.assignees && task.assignees.length > 0 ? task.assignees.map(a => a.fullName).join(', ') : 'Atanmamış'}
                                             </TableCell>
                                             <TableCell>{task.createdDate ? new Date(task.createdDate).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</TableCell>
                                             <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</TableCell>
