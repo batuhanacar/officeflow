@@ -18,7 +18,7 @@ const DashboardPage = () => {
     const [error, setError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortConfig, setSortConfig] = useState({ key: 'dueDate', direction: 'descending' });
+    const [sortConfig, setSortConfig] = useState({ key: 'createdDate', direction: 'descending' });
 
     const fetchTasks = async () => {
         try {
@@ -43,13 +43,17 @@ const DashboardPage = () => {
 
     const displayedTasks = useMemo(() => {
         let filteredTasks = [...allTasks];
+
         if (searchTerm) {
+            const lowercasedFilter = searchTerm.toLocaleLowerCase('tr-TR');
             filteredTasks = filteredTasks.filter(task =>
+                task.title.toLocaleLowerCase('tr-TR').includes(lowercasedFilter) ||
                 task.assignees?.some(assignee =>
-                    assignee.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+                    assignee.fullName.toLocaleLowerCase('tr-TR').includes(lowercasedFilter)
                 )
             );
         }
+
         if (sortConfig.key) {
             filteredTasks.sort((a, b) => {
                 let aValue = a[sortConfig.key];
@@ -60,9 +64,20 @@ const DashboardPage = () => {
                     bValue = b.assignees?.[0]?.fullName || '';
                 }
 
-                if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-                if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-                return 0;
+                let comparison = 0;
+                if (typeof aValue === 'string' && typeof bValue === 'string') {
+                    // TÜRKÇE KARAKTERLERE DUYARLI SIRALAMA
+                    comparison = aValue.localeCompare(bValue, 'tr-TR');
+                } else {
+                    // Tarih ve diğerleri için normal karşılaştırma
+                    if (aValue < bValue) {
+                        comparison = -1;
+                    } else if (aValue > bValue) {
+                        comparison = 1;
+                    }
+                }
+
+                return sortConfig.direction === 'descending' ? -comparison : comparison;
             });
         }
         return filteredTasks;
@@ -75,7 +90,6 @@ const DashboardPage = () => {
 
     const handleTaskCreated = () => { fetchTasks(); };
     const handleRowClick = (taskId) => { navigate(`/tasks/${taskId}`); };
-
     const canCreateTask = true;
 
     return (
@@ -88,7 +102,14 @@ const DashboardPage = () => {
             </Box>
 
             <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
-                <TextField fullWidth variant="outlined" label="Atanan Kişiye Göre Filtrele" placeholder="İsim yazın..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <TextField
+                    fullWidth
+                    variant="outlined"
+                    label="Görev Başlığı veya Atanan Kişiye Göre Filtrele"
+                    placeholder="Arama yapın..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </Paper>
 
             {isLoading && <CircularProgress />}
@@ -102,6 +123,7 @@ const DashboardPage = () => {
                                 <TableRow>
                                     <TableCell><TableSortLabel active={sortConfig.key === 'title'} direction={sortConfig.direction} onClick={() => handleSort('title')}>Görev Başlığı</TableSortLabel></TableCell>
                                     <TableCell><TableSortLabel active={sortConfig.key === 'assignees'} direction={sortConfig.direction} onClick={() => handleSort('assignees')}>Atanan Kişi(ler)</TableSortLabel></TableCell>
+                                    <TableCell><TableSortLabel active={sortConfig.key === 'createdDate'} direction={sortConfig.direction} onClick={() => handleSort('createdDate')}>Oluşturulma Tarihi</TableSortLabel></TableCell>
                                     <TableCell><TableSortLabel active={sortConfig.key === 'dueDate'} direction={sortConfig.direction} onClick={() => handleSort('dueDate')}>Son Teslim Tarihi</TableSortLabel></TableCell>
                                     <TableCell>Durum</TableCell>
                                 </TableRow>
@@ -117,12 +139,13 @@ const DashboardPage = () => {
                                                     : 'Atanmamış'
                                                 }
                                             </TableCell>
+                                            <TableCell>{task.createdDate ? new Date(task.createdDate).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</TableCell>
                                             <TableCell>{task.dueDate ? new Date(task.dueDate).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</TableCell>
                                             <TableCell><Chip label={STATUS_TRANSLATIONS[task.status] || task.status} color={getStatusChipColor(task.status)} size="small" /></TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
-                                    <TableRow><TableCell colSpan={4} align="center">Arama kriterlerine uygun görev bulunamadı.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={5} align="center">Arama kriterlerine uygun görev bulunamadı.</TableCell></TableRow>
                                 )}
                             </TableBody>
                         </Table>
