@@ -33,4 +33,7 @@ public class User {
     @ManyToMany(mappedBy = "assignees", fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Task> assignedTasks = new HashSet<>();
+
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Comment> comments;
 }
