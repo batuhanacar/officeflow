@@ -1,10 +1,9 @@
 package com.example.officeflow.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Data
@@ -14,7 +13,6 @@ import java.util.Set;
 @Entity
 @Table(name = "users")
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,6 +30,10 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @OneToMany(mappedBy = "assignee")
-    private Set<Task> tasks;
+    @ManyToMany(mappedBy = "assignees", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<Task> assignedTasks = new HashSet<>();
+
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Comment> comments;
 }

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        body { font-family: "Liberation Serif", "DejaVu Sans", serif; font-size: 10px; }
+        h1 { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; text-align: left; padding: 6px; }
+        th { background-color: #f2f2f2; }
+        .task-row { page-break-inside: avoid; }
+        .description-cell { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+<h1>Görev Raporu</h1>
+<p>Rapor Tarihi: <span th:text="${reportDate}"></span></p>
+<table>
+    <thead>
+    <tr>
+        <th>Başlık</th>
+        <th>Açıklama</th>
+        <th>Atanan Kişi(ler)</th>
+        <th>Oluşturulma Tarihi</th>
+        <th>Son Teslim Tarihi</th>
+        <th>Durum</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="task : ${tasks}" class="task-row">
+        <td th:text="${task.title}"></td>
+        <td class="description-cell" th:text="${task.description}"></td>
+        <td th:text="${#strings.listJoin(task.assignees.![fullName], ', ')}"></td>
+        <td th:text="${task.createdDate != null ? #temporals.format(task.createdDate, 'dd.MM.yyyy HH:mm') : ''}"></td>
+        <td th:text="${task.dueDate != null ? #temporals.format(task.dueDate, 'dd.MM.yyyy HH:mm') : 'N/A'}"></td>
+        <td th:text="${statusTranslations.get(task.status)}"></td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

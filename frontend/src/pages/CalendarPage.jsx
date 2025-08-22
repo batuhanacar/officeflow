@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -8,10 +8,11 @@ import axiosInstance from '../api/axiosInstance';
 import { AuthContext } from '../context/AuthContext';
 import { Box, Typography, CircularProgress, Alert, Paper, Button } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { getCalendarEventColor } from '../utils/statusUtils';
+import { getCalendarEventColor, STATUS_TRANSLATIONS } from '../utils/statusUtils';
 
 const CalendarPage = () => {
-    const { isTeamLead } = useContext(AuthContext);
+    const { user, isTeamLead } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -19,28 +20,38 @@ const CalendarPage = () => {
     useEffect(() => {
         const fetchTasksForCalendar = async () => {
             try {
+                setIsLoading(true);
                 const endpoint = isTeamLead ? '/tasks/all' : '/tasks/my-tasks';
                 const response = await axiosInstance.get(endpoint);
 
-                const formattedEvents = response.data.map(task => ({
-                    id: task.id,
-                    title: task.title,
-                    start: task.dueDate,
-                    color: getCalendarEventColor(task.status),
-                    extendedProps: {
-                        assignee: task.assignee.fullName
-                    }
-                }));
+                const formattedEvents = response.data
+                    .filter(task => task.dueDate)
+                    .map(task => ({
+                        id: task.id,
+                        title: task.title,
+                        start: task.dueDate,
+                        color: getCalendarEventColor(task.status),
+                        extendedProps: {
+                            assignees: task.assignees && task.assignees.length > 0
+                                ? task.assignees.map(a => a.fullName).join(', ')
+                                : 'Atanmamış',
+                            status: STATUS_TRANSLATIONS[task.status] || task.status
+                        }
+                    }));
 
                 setEvents(formattedEvents);
+                setError('');
             } catch (err) {
                 setError("Görevler takvime yüklenirken bir hata oluştu.");
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchTasksForCalendar();
-    }, [isTeamLead]);
+
+        if (user) {
+            fetchTasksForCalendar();
+        }
+    }, [user, isTeamLead]);
 
     if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress /></Box>;
     if (error) return <Alert severity="error">{error}</Alert>;
@@ -63,10 +74,7 @@ const CalendarPage = () => {
                 }}
                 events={events}
                 eventClick={(info) => {
-                    alert(
-                        `Görev: ${info.event.title}\n` +
-                        `Atanan: ${info.event.extendedProps.assignee}`
-                    );
+                    navigate(`/tasks/${info.event.id}`);
                 }}
                 locale="tr"
                 buttonText={{

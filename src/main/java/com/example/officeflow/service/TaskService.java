@@ -12,8 +12,9 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,15 +24,18 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public TaskViewDTO createTask(TaskCreateDTO taskCreateDTO) {
-        User assignee = userRepository.findById(taskCreateDTO.getAssigneeId())
-                .orElseThrow(() -> new EntityNotFoundException("Atanacak kullanıcı bulunamadı: " + taskCreateDTO.getAssigneeId()));
+        List<User> assigneesList = userRepository.findAllById(taskCreateDTO.getAssigneeIds());
+        if (assigneesList.size() != taskCreateDTO.getAssigneeIds().size()) {
+            throw new EntityNotFoundException("Atanan kullanıcılardan bazıları bulunamadı.");
+        }
 
         Task task = Task.builder()
                 .title(taskCreateDTO.getTitle())
                 .description(taskCreateDTO.getDescription())
                 .status(TaskStatus.TODO)
-                .assignee(assignee)
+                .assignees(new HashSet<>(assigneesList))
                 .dueDate(taskCreateDTO.getDueDate())
                 .build();
 
@@ -40,43 +44,31 @@ public class TaskService {
     }
 
     public List<TaskViewDTO> getAllTasks() {
-        return taskRepository.findAll().stream()
-                .map(this::convertToTaskViewDTO)
-                .collect(Collectors.toList());
+        return taskRepository.findAll().stream().map(this::convertToTaskViewDTO).collect(Collectors.toList());
     }
 
     public List<TaskViewDTO> getTasksByAssigneeId(Long userId) {
-        return taskRepository.findByAssigneeId(userId).stream()
-                .map(this::convertToTaskViewDTO)
-                .collect(Collectors.toList());
+        return taskRepository.findByAssignees_Id(userId).stream().map(this::convertToTaskViewDTO).collect(Collectors.toList());
     }
 
     public TaskViewDTO getTaskById(Long id) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Görev bulunamadı: " + id));
-        return convertToTaskViewDTO(task);
+        return taskRepository.findById(id).map(this::convertToTaskViewDTO).orElseThrow(() -> new EntityNotFoundException("Görev bulunamadı"));
     }
 
     @Transactional
     public TaskViewDTO updateTaskStatus(Long taskId, TaskStatus newStatus) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new EntityNotFoundException("Güncellenecek görev bulunamadı: " + taskId));
-
+        Task task = taskRepository.findById(taskId).orElseThrow(() -> new EntityNotFoundException("Güncellenecek görev bulunamadı"));
         task.setStatus(newStatus);
-
         return convertToTaskViewDTO(task);
     }
 
     public void deleteTask(Long taskId) {
-        if (!taskRepository.existsById(taskId)) {
-            throw new EntityNotFoundException("Silinecek görev bulunamadı: " + taskId);
-        }
         taskRepository.deleteById(taskId);
     }
 
     public boolean isTaskOwner(Long taskId, String username) {
         return taskRepository.findById(taskId)
-                .map(task -> task.getAssignee().getUsername().equals(username))
+                .map(task -> task.getAssignees().stream().anyMatch(user -> user.getUsername().equals(username)))
                 .orElse(false);
     }
 
@@ -88,8 +80,17 @@ public class TaskService {
         taskViewDTO.setStatus(task.getStatus());
         taskViewDTO.setCreatedDate(task.getCreatedDate());
         taskViewDTO.setDueDate(task.getDueDate());
-        UserViewDTO userViewDTO = new UserViewDTO(task.getAssignee().getId(), task.getAssignee().getFullName(), task.getAssignee().getUsername());
-        taskViewDTO.setAssignee(userViewDTO);
+        Set<UserViewDTO> assigneeDTOs = task.getAssignees().stream()
+                .map(user -> new UserViewDTO(user.getId(), user.getFullName(), user.getUsername()))
+                .collect(Collectors.toSet());
+        taskViewDTO.setAssignees(assigneeDTOs);
         return taskViewDTO;
+    }
+
+    @Transactional
+    public long cleanupAllCompletedTasks() {
+        List<Task> completedTasks = taskRepository.findByStatus(TaskStatus.DONE);
+        taskRepository.deleteAll(completedTasks);
+        return completedTasks.size();
     }
 }

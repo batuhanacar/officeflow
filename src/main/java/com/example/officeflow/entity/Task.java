@@ -1,13 +1,11 @@
 package com.example.officeflow.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Builder
@@ -15,6 +13,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "tasks")
+@ToString(exclude = "assignees")
+@EqualsAndHashCode(exclude = "assignees")
 public class Task {
 
     @Id
@@ -24,9 +24,6 @@ public class Task {
     @Column(nullable = false)
     private String title;
 
-    // @Lob ANNOTASYONUNU KALDIRDIK.
-    // Bu annotasyon, Hibernate'in bu alanı standart bir metin olarak
-    // işlemesini sağlayarak LOB hatasını önleyecektir.
     @Column(columnDefinition = "TEXT")
     private String description;
 
@@ -40,7 +37,14 @@ public class Task {
 
     private LocalDateTime dueDate;
 
-    @ManyToOne
-    @JoinColumn(name = "assignee_id", nullable = false)
-    private User assignee;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "task_assignees",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> assignees = new HashSet<>();
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Comment> comments;
 }

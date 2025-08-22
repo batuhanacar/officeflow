@@ -16,17 +16,15 @@ export const AuthProvider = ({ children }) => {
                 if (decodedUser.exp * 1000 > Date.now()) {
                     setUser({
                         username: decodedUser.sub,
-                        role: decodedUser.role
+                        role: decodedUser.role,
+                        id: decodedUser.id // Kullanıcı ID'sini de saklayalım
                     });
                     setToken(storedToken);
                 } else {
-                    setUser(null);
                     localStorage.removeItem('token');
                 }
             } catch (error) {
-                setUser(null);
                 localStorage.removeItem('token');
-                console.error("Geçersiz token bulundu ve temizlendi:", error);
             }
         }
         setIsLoading(false);
@@ -37,7 +35,8 @@ export const AuthProvider = ({ children }) => {
             const decodedUser = jwtDecode(newToken);
             setUser({
                 username: decodedUser.sub,
-                role: decodedUser.role
+                role: decodedUser.role,
+                id: decodedUser.id
             });
             setToken(newToken);
             localStorage.setItem('token', newToken);

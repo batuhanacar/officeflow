@@ -2,8 +2,8 @@ package com.example.officeflow.dto;
 
 import com.example.officeflow.entity.TaskStatus;
 import lombok.Data;
-
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 public class TaskViewDTO {
@@ -13,5 +13,5 @@ public class TaskViewDTO {
     private TaskStatus status;
     private LocalDateTime createdDate;
     private LocalDateTime dueDate;
-    private UserViewDTO assignee;
+    private Set<UserViewDTO> assignees;
 }
