@@ -10,9 +10,13 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:5173", "http://localhost:8080")
+                .allowedOrigins(
+                        "http://localhost:5173",
+                        "http://localhost:8080",
+                        "https://officeflow-frontend-84s2.onrender.com"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true); // Kimlik bilgileriyle (cookie, token vb.) isteklere izin ver
+                .allowCredentials(true);
     }
 }
