@@ -10,7 +10,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 12
       POSTGRES_DB: officeflow_db
-      VITE_API_BASE_URL: https://officeflow-backend-84s2.onrender.com/api
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
