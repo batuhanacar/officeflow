@@ -129,7 +129,7 @@ const DashboardPage = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
                 <Typography variant="h4" component="h1">
-                    Görev Panosu
+                    Görev Listesi
                 </Typography>
                 <Box sx={{display: 'flex', gap: 1, flexWrap: 'wrap'}}>
                     {isTeamLead && (
