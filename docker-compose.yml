@@ -40,7 +40,7 @@ services:
     ports:
       - "5173:80"
     environment:
-      VITE_API_BASE_URL: https://officeflow-backend-84s2.onrender.com/api
+      VITE_API_BASE_URL: http://localhost:8080/api
     depends_on:
       - backend
 
