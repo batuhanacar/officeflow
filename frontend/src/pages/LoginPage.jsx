@@ -30,10 +30,7 @@ const LoginPage = () => {
         e.preventDefault();
         setError('');
         try {
-            // API temel URL'sini ortam değişkeninden al
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-
-            const response = await axios.post(`${apiBaseUrl}/auth/login`, {
+            const response = await axios.post('http://localhost:8080/api/auth/login', {
                 username,
                 password
             });
