@@ -12,9 +12,8 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-# npm run build komutu artık VITE_API_BASE_URL ortam değişkenini kullanacaktır.
-# Ortam değişkenini build komutuna açıkça geçiriyoruz.
-RUN VITE_API_BASE_URL=$VITE_API_BASE_URL npm run build
+# npm run build komutu artık VITE_API_BASE_URL ortam değişkenini kullanacaktır
+RUN npm run build
 
 # Adım 2: Build edilen statik dosyaları Nginx sunucusuna kopyalamak
 FROM nginx:stable-alpine
